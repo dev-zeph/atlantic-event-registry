@@ -2,21 +2,22 @@ export default function ConflictToast({ toast, dismissing, onUseSuggested, onKee
   if (!toast) return null;
 
   return (
-    <div className={`toast ${dismissing ? "toast-dismissing" : ""}`} role="alert">
+    <div className={`toast ${dismissing ? "is-dismissing" : ""}`} role="alert">
+      <p className="toast-title">Date already confirmed</p>
       <p className="toast-message">
-        <strong>{toast.date}</strong> is already confirmed by <strong>{toast.heldBy}</strong>.
+        {toast.heldBy} has confirmed {toast.date}.
         {toast.suggestedDate
-          ? ` Use ${toast.suggestedDate} instead?`
+          ? ` The next open date is ${toast.suggestedDate}. Use that instead?`
           : " No open date was found in the next 120 days."}
       </p>
       <div className="toast-actions">
         {toast.suggestedDate && (
-          <button type="button" className="toast-button primary" onClick={onUseSuggested}>
-            Yes, use {toast.suggestedDate}
+          <button type="button" className="btn btn-primary btn-sm" onClick={onUseSuggested}>
+            Use {toast.suggestedDate}
           </button>
         )}
-        <button type="button" className="toast-button" onClick={onKeepOriginal}>
-          No, keep {toast.date}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onKeepOriginal}>
+          Keep {toast.date}
         </button>
       </div>
     </div>

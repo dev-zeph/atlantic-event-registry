@@ -14,7 +14,7 @@ function isoDate(year, monthIndex, day) {
   return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
 }
 
-export default function Calendar({ dates, initialYear, initialMonth }) {
+export default function Calendar({ dates, initialYear, initialMonth, mySlug, window: bookable }) {
   const [year, setYear] = useState(initialYear);
   const [monthIndex, setMonthIndex] = useState(initialMonth);
   const [hovered, setHovered] = useState(null);
@@ -34,76 +34,76 @@ export default function Calendar({ dates, initialYear, initialMonth }) {
   for (let i = 0; i < startWeekday; i += 1) cells.push(null);
   for (let day = 1; day <= daysInMonth; day += 1) cells.push(day);
 
-  function goToPreviousMonth() {
+  const viewingBookableMonth =
+    !bookable || (bookable.year === year && bookable.monthIndex === monthIndex);
+
+  function step(delta) {
     setHovered(null);
-    if (monthIndex === 0) {
+    const next = monthIndex + delta;
+    if (next < 0) {
       setYear((current) => current - 1);
       setMonthIndex(11);
-    } else {
-      setMonthIndex((current) => current - 1);
-    }
-  }
-
-  function goToNextMonth() {
-    setHovered(null);
-    if (monthIndex === 11) {
+    } else if (next > 11) {
       setYear((current) => current + 1);
       setMonthIndex(0);
     } else {
-      setMonthIndex((current) => current + 1);
+      setMonthIndex(next);
     }
   }
 
   return (
     <div className="calendar">
       <div className="calendar-header">
-        <button type="button" className="calendar-nav" onClick={goToPreviousMonth} aria-label="Previous month">
-          &larr;
+        <button type="button" className="calendar-nav" onClick={() => step(-1)} aria-label="Previous month">
+          &#8592;
         </button>
         <span className="calendar-title">
           {MONTH_NAMES[monthIndex]} {year}
         </span>
-        <button type="button" className="calendar-nav" onClick={goToNextMonth} aria-label="Next month">
-          &rarr;
+        <button type="button" className="calendar-nav" onClick={() => step(1)} aria-label="Next month">
+          &#8594;
         </button>
       </div>
 
-      <div className="calendar-grid calendar-weekdays">
+      <div className="calendar-grid">
         {WEEKDAY_NAMES.map((weekday) => (
           <div key={weekday} className="calendar-weekday">
             {weekday}
           </div>
         ))}
-      </div>
 
-      <div className="calendar-grid">
         {cells.map((day, index) => {
-          if (day === null) return <div key={`blank-${index}`} className="calendar-cell empty" />;
+          if (day === null) return <div key={`blank-${index}`} className="calendar-cell is-blank" />;
 
           const dateKey = isoDate(year, monthIndex, day);
           const entries = entriesByDate.get(dateKey) || [];
           const hasConfirmed = entries.some((entry) => entry.status === "confirmed");
           const hasPending = entries.some((entry) => entry.status === "pending");
+          const isMine = Boolean(mySlug) && entries.some((entry) => entry.orgSlug === mySlug);
           const isHovered = hovered === dateKey;
+          const isBookable =
+            !bookable || (dateKey >= bookable.first && dateKey <= bookable.last);
+
+          const classes = ["calendar-cell"];
+          if (hasConfirmed) classes.push("is-confirmed");
+          else if (hasPending) classes.push("is-pending");
+          if (isMine) classes.push("is-mine");
+          if (!isBookable) classes.push("is-outside");
 
           return (
             <div
               key={dateKey}
-              className={[
-                "calendar-cell",
-                hasConfirmed ? "confirmed" : "",
-                !hasConfirmed && hasPending ? "pending" : "",
-              ].join(" ").trim()}
+              className={classes.join(" ")}
               onMouseEnter={() => entries.length > 0 && setHovered(dateKey)}
               onMouseLeave={() => setHovered((current) => (current === dateKey ? null : current))}
             >
-              <span className="calendar-day-number">{day}</span>
+              <span className="calendar-day">{day}</span>
               {isHovered && entries.length > 0 && (
                 <div className="calendar-tooltip">
                   {entries.map((entry) => (
-                    <div key={`${entry.orgName}-${entry.status}`} className="calendar-tooltip-row">
-                      <span className={`status-dot ${entry.status}`} />
-                      {entry.orgName} &mdash; {entry.status}
+                    <div key={`${entry.orgSlug}-${entry.status}`} className="calendar-tooltip-row">
+                      <span className={`dot dot-${entry.status}`} />
+                      {entry.orgName} ({entry.status})
                     </div>
                   ))}
                 </div>
@@ -113,12 +113,19 @@ export default function Calendar({ dates, initialYear, initialMonth }) {
         })}
       </div>
 
+      {bookable && !viewingBookableMonth && (
+        <p className="calendar-notice">
+          Outside the test window. Only {MONTH_NAMES[bookable.monthIndex]} {bookable.year} dates
+          can be booked right now.
+        </p>
+      )}
+
       <div className="calendar-legend">
         <span>
-          <span className="status-dot confirmed" /> Confirmed
+          <span className="dot dot-confirmed" /> Confirmed
         </span>
         <span>
-          <span className="status-dot pending" /> Pending
+          <span className="dot dot-pending" /> Pending
         </span>
       </div>
     </div>
