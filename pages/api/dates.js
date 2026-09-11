@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "../../lib/supabaseAdmin";
+import { getSupabaseServer } from "../../lib/supabaseServer";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_SUGGESTION_LOOKAHEAD_DAYS = 120;
@@ -36,7 +36,7 @@ async function nextAvailableDate(supabase, fromDate) {
 export default async function handler(req, res) {
   let supabase;
   try {
-    supabase = getSupabaseAdmin();
+    supabase = getSupabaseServer();
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
